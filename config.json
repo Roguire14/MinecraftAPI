@@ -1,0 +1,12 @@
+{
+    "pvp":{
+        "lg" : {"image": "" },
+        "uhc": {"image": "uhc" },
+        "skydefender": {"image": ""},
+        "fk": {"image": ""},
+        "test": {"image": "minecraft-test"}
+    },
+    "minigame":{
+        "tnt-run": {"image": "uhc"} 
+    }
+}
