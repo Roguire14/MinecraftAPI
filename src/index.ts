@@ -3,11 +3,13 @@ dotenv.config();
 
 import express, {Request, Response} from 'express'
 import minecraftRouter from "./minecraftHandler";
-import { dbConnect, getInstance } from './db/mongo';
-import User from './models/User';
+// import { dbConnect, getInstance } from './db/mongo.ts.old';
+// import User from './models/User.ts.old';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { authMiddleWare } from './middleware/auth';
+import { db, dbConnect } from "./db/mongo";
+import configRouter from "./configRouter";
 
 const app = express();
 const port = 25550;
@@ -16,18 +18,26 @@ app.use(express.json());
 
 app.use("/", minecraftRouter);
 
+app.use("/config", configRouter);
+
 app.post("/login", async(req: Request, res: Response)=>{
     const {username, password} = req.body;
     if(!username || !password){
-        res.status(400).json({message:"Identifiants invalides"})
+        res.status(401).json({message:"Identifiants invalides"})
         return;
     }
-    const user = await User.findOne({username:username});
-    if(!user || !(await user.comparePassword(password))){
+    const user = await db.collection("users").findOne({username});
+    if(!user || !(await bcrypt.compare(password, user.passwordHash))){
         res.status(401).json({message: "Identifiants invalides"});
         return;
     }
-    const token = jwt.sign({username: user.username}, process.env.SECRET_KEY!, {expiresIn: "1h"})
+    // const user = await User.findOne({username:username});
+    // if(!user || !(await user.comparePassword(password))){
+    //     res.status(401).json({message: "Identifiants invalides"});
+    //     return;
+    // }
+    console.log(`Logged in: ${username} from ${req.ip}`);
+    const token = jwt.sign({username: user.username}, process.env.SECRET_KEY!, {expiresIn: "20min"})
     res.status(200).json({token})
 });
 
@@ -41,19 +51,20 @@ app.post("/register", async(req:Request, res:Response)=>{
         res.status(401).json({message: "Identifiants invalides"});
         return;
     }
-    if(await User.findOne({username})) {
-        res.status(401).json({mesage: "Pseudo déjà utilisé"});
+    if(await db.collection("users").findOne({username})){
+        res.status(401).json({message: "Pseudo déjà utilisé"});
         return;
     }
-    const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = new User({ username, passwordHash });
-    await newUser.save();
-    res.json({ message: 'Utilisateur créé' });
+    // if(await User.findOne({username})) {
+    //     res.status(401).json({mesage: "Pseudo déjà utilisé"});
+    //     return;
+    // }
+    const passwordHash = await bcrypt.hash(password, 15);
+    // const newUser = new User({ username, passwordHash });
+    // await newUser.save();
+    await db.collection('users').insertOne({ username, password: passwordHash });
+    res.status(201).json({ message: 'Utilisateur créé' });
 });
-
-app.get("/protected", authMiddleWare, (req: Request, res: Response)=>{
-    res.status(200).json({message: `Bienvenue ${req.body.user}`})
-})
 
 app.use((req, res) => {
     res.status(404).json({
@@ -64,5 +75,4 @@ app.use((req, res) => {
 
 app.listen(port, "0.0.0.0", async () => {
     console.log(`Now listening on ${port}`)
-    await dbConnect();
 });

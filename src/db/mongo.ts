@@ -1,37 +1,25 @@
-import mongoose, { ConnectOptions } from "mongoose";
+import { MongoClient, Db } from "mongodb";
 
-const clientOptions: ConnectOptions = {
-  serverApi: {
-    version: '1',
-    strict: true,
-    deprecationErrors: true,
-  },
-};
+let mongoClient: MongoClient;
+let db: Db;
 
-let dbInstance: mongoose.Connection["db"] | null = null;
-
-export const dbConnect = async () => {
-  try {
-    if (!process.env.MONGO_URL) {
-      throw new Error("Mongo URL not defined");
+const dbConnect = async () => {
+    try{
+        if(!process.env.MONGO_URL){
+            throw new Error("Mongo URL is not definied");
+        }
+        mongoClient = new MongoClient(process.env.MONGO_URL);
+        await mongoClient.connect();
+        db = mongoClient.db("db")
+        console.log(`MongoDB Connected`)
+    }catch(err){
+        console.error(err);
+        process.exit(1);
     }
+}
 
-    const conn = await mongoose.connect(process.env.MONGO_URL, clientOptions);
-    
-    if (mongoose.connection.db) {
-      dbInstance = mongoose.connection.db;
-      console.log(`MongoDb connected: ${conn.connection.host}`);
-    }
-
-  } catch (error) {
-    console.error(error);
-    process.exit(1);
-  }
-};
-
-export const getInstance = () => {
-  if (!dbInstance) {
-    throw new Error("Database not connected. Call dbConnect() first.");
-  }
-  return dbInstance;
+export {
+    dbConnect,
+    db,
+    mongoClient
 };

@@ -1,12 +1,21 @@
 import Docker from "dockerode";
 const docker = new Docker();
-import fs from "fs";
 import { DockerEvent, RunningServers, Config} from './type';
 import { randomUUID } from "crypto";
+import { db, dbConnect } from "./db/mongo";
   
 const PORT_RANGE = {start:25566, end:25575};
 const runningServers: RunningServers = {};
-const config:Config = JSON.parse(fs.readFileSync("config.json","utf-8"));
+
+let config:Config;
+
+(async ()=>{
+    await dbConnect();
+    const doc = await db.collection("config").findOne();
+    if(doc){
+        config = {pvp: doc.pvp, minigame: doc.minigame}
+    }
+})();
 
 (()=>{
     getRunningContainers()
