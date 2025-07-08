@@ -9,13 +9,19 @@ const runningServers: RunningServers = {};
 
 let config:Config;
 
-(async ()=>{
-    await dbConnect();
+const getConfig = async () => {
     const doc = await db.collection("config").findOne();
     if(doc){
         config = {pvp: doc.pvp, minigame: doc.minigame}
     }
+}
+
+(async ()=>{
+    await dbConnect();
+    await getConfig();
 })();
+
+setInterval(getConfig, 1000);
 
 (()=>{
     getRunningContainers()
@@ -81,21 +87,27 @@ export async function startMinecraftServer(category: string, type: string, host:
     let port = PORT_RANGE.start;
     while(usedPorts.includes(port) && port < PORT_RANGE.end) port++;
     if (port > PORT_RANGE.end) {
-        throw "❌ Tous les ports sont utilisés !";
+        throw "Tous les ports sont utilisés !";
     }
     if (!(category in config)) throw("Le type de serveur demandé n'existe pas");
     if (!(type in config[category])) throw ("La sous-catégorie demandée n'existe pas");
     if(!host) throw "Un host est nécessaire pour lancer un serveur";
 
     const dockerType = config[category][type];
-    const containerName = `minecraft-${category}-${type}-${port}-${host}`;
-    const serverData = {name:containerName, port: port};
+    if(!dockerType.image) throw "Le mode n'est pas correctement configué: il manque l'image Docker";
+
+    const containerName = `minecraft_${category}_${type}_${port}_${host}`;
+    const fullServerData = {name:containerName, port:port, host:host}
     const uuid = randomUUID();
-    runningServers[uuid] = serverData;
+    runningServers[uuid] = fullServerData;
 
     return docker.createContainer({
         Image: dockerType.image,
         name: containerName,
+        Hostname: containerName,
+        Env: [
+            `SERVER_NAME=${containerName}`
+        ],
         HostConfig: {
             CpuCount: 3,
             Memory: 4*1024*1024*1024, 
@@ -110,14 +122,15 @@ export async function startMinecraftServer(category: string, type: string, host:
     }).then(async container => {
         try {
             await container.start();
-            delete runningServers[uuid]
-            runningServers[container.id] = serverData;
-            return JSON.stringify(serverData);
+            delete runningServers[uuid];
+            runningServers[container.id] = fullServerData;
+            return JSON.stringify(fullServerData);
         } catch (error) {
+            delete runningServers[uuid];
             if (error instanceof Error) {
-                throw error; // Relance l'erreur telle quelle
+                throw error;
             } else {
-                throw new Error(String(error)); // Convertit en chaîne si ce n'est pas une erreur standard
+                throw new Error(String(error));
             }
         }
     });
