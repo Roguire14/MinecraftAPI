@@ -41,11 +41,17 @@ router.get("/get-server/:serverName", async (req: Request, res: Response) => {
 
 router.post("/update-server", async (req: Request, res: Response) => {
     const {serverName} = req.body;
-    await db.collection("servers").updateOne(
-        {name: serverName},
-        {$set: {created: true}}
-    );
-    res.json({code: 200, success: true});
+    try{
+        await db.collection("servers").updateOne(
+            {name: serverName},
+            {$set: {created: true}}
+        );
+        res.json({code: 200, success: true});
+    } catch (e) {
+        console.log(e);
+        res.json({code: 404, message: "Le serveur n'existe pas"});
+    }
+
 });
 
 router.delete("/delete-server/:serverName", async (req: Request, res: Response) => {
