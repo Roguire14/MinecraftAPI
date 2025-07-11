@@ -5,7 +5,7 @@ let db: Db;
 
 const dbConnect = async () => {
     if (!process.env.MONGO_URL) {
-        throw new Error("Mongo URL is not definied");
+        throw new Error("Mongo URL is not defined");
     }
     try {
         mongoClient = new MongoClient(process.env.MONGO_URL);
