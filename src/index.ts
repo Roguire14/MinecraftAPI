@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
-dotenv.config();
-
 import express, {Request, Response} from 'express'
 import minecraftRouter from "./minecraftHandler";
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import {db} from "./db/mongo";
 import configRouter from "./configRouter";
+
+dotenv.config();
 
 const app = express();
 const port = 25550;

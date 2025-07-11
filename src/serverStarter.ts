@@ -82,11 +82,10 @@ export function getUsedPorts(){
 }
 
 export async function startMinecraftServer(category: string, type: string, host: string){
-    // const usedPorts = await getAsyncUsedPorts();
     const usedPorts = getUsedPorts();
     let port = PORT_RANGE.start;
     while(usedPorts.includes(port) && port < PORT_RANGE.end) port++;
-    if (port > PORT_RANGE.end) {
+    if (port > PORT_RANGE.end || usedPorts.includes(port)) {
         throw "Tous les ports sont utilisés !";
     }
     if (!(category in config)) throw("Le type de serveur demandé n'existe pas");

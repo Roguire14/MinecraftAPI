@@ -14,7 +14,6 @@ router.post("/start-server", authMiddleWare, (req: Request, res: Response) => {
 
 router.get("/get-servers", (req: Request, res: Response) => {
     const runningServers = getRunningServer();
-    // console.log(runningServers)
     res.json({code: 200, message: JSON.stringify(runningServers)})
 });
 
@@ -41,7 +40,7 @@ router.get("/get-server/:serverName", async (req: Request, res: Response) => {
 
 router.post("/update-server", async (req: Request, res: Response) => {
     const {serverName} = req.body;
-    try{
+    try {
         await db.collection("servers").updateOne(
             {name: serverName},
             {$set: {created: true}}
@@ -59,9 +58,5 @@ router.delete("/delete-server/:serverName", async (req: Request, res: Response) 
     await db.collection("servers").deleteOne({name: serverName});
     res.json({success: true});
 });
-
-
-// loBoBot_API
-// oNcREHRAEU6w4LzL
 
 export default router;
